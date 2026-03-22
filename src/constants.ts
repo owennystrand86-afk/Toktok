@@ -1,0 +1,42 @@
+export const INITIAL_VIDEOS = [
+  {
+    creatorId: 'system_1',
+    creatorUsername: 'nature_vibes',
+    creatorPhotoURL: 'https://picsum.photos/seed/nature/200/200',
+    videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-tree-with-yellow-flowers-1173-large.mp4',
+    description: 'Beautiful nature vibes 🌿 #nature #peace',
+    likesCount: 1200,
+    commentsCount: 45,
+    sharesCount: 89,
+  },
+  {
+    creatorId: 'system_2',
+    creatorUsername: 'city_explorer',
+    creatorPhotoURL: 'https://picsum.photos/seed/city/200/200',
+    videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-urban-traffic-at-night-in-a-city-4405-large.mp4',
+    description: 'City nights are the best 🌃 #city #nightlife',
+    likesCount: 850,
+    commentsCount: 32,
+    sharesCount: 12,
+  },
+  {
+    creatorId: 'system_3',
+    creatorUsername: 'foodie_delight',
+    creatorPhotoURL: 'https://picsum.photos/seed/food/200/200',
+    videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-serving-a-delicious-pizza-4408-large.mp4',
+    description: 'Best pizza in town! 🍕 #foodie #pizza',
+    likesCount: 2300,
+    commentsCount: 156,
+    sharesCount: 450,
+  },
+  {
+    creatorId: 'system_4',
+    creatorUsername: 'travel_bug',
+    creatorPhotoURL: 'https://picsum.photos/seed/travel/200/200',
+    videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-waves-coming-to-the-beach-shore-at-sunset-4406-large.mp4',
+    description: 'Missing the beach 🏖️ #travel #beach',
+    likesCount: 5600,
+    commentsCount: 89,
+    sharesCount: 120,
+  }
+];

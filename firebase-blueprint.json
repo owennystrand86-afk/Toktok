@@ -1,0 +1,123 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile information.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "username": { "type": "string" },
+        "bio": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "coins": { "type": "integer" },
+        "isAdmin": { "type": "boolean" },
+        "isVerified": { "type": "boolean" },
+        "canGoLive": { "type": "boolean" },
+        "followersCount": { "type": "integer" },
+        "followingCount": { "type": "integer" },
+        "isBanned": { "type": "boolean" },
+        "warnings": { "type": "integer" }
+      },
+      "required": ["uid", "username"]
+    },
+    "Video": {
+      "title": "Video",
+      "description": "Video metadata and content.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "creatorId": { "type": "string" },
+        "creatorUsername": { "type": "string" },
+        "creatorPhotoURL": { "type": "string" },
+        "videoUrl": { "type": "string" },
+        "description": { "type": "string" },
+        "likesCount": { "type": "integer" },
+        "commentsCount": { "type": "integer" },
+        "sharesCount": { "type": "integer" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["creatorId", "videoUrl"]
+    },
+    "Comment": {
+      "title": "Comment",
+      "description": "Comment on a video.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "videoId": { "type": "string" },
+        "userId": { "type": "string" },
+        "username": { "type": "string" },
+        "userPhotoURL": { "type": "string" },
+        "text": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["videoId", "userId", "text"]
+    },
+    "Like": {
+      "title": "Like",
+      "description": "Like on a video.",
+      "type": "object",
+      "properties": {
+        "videoId": { "type": "string" },
+        "userId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["videoId", "userId"]
+    },
+    "AuditLog": {
+      "title": "AuditLog",
+      "description": "Log of administrative actions.",
+      "type": "object",
+      "properties": {
+        "adminId": { "type": "string" },
+        "adminUsername": { "type": "string" },
+        "action": { "type": "string" },
+        "targetId": { "type": "string" },
+        "targetUsername": { "type": "string" },
+        "details": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["adminId", "action", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profile documents."
+    },
+    "/videos/{videoId}": {
+      "schema": "Video",
+      "description": "Video documents."
+    },
+    "/videos/{videoId}/comments/{commentId}": {
+      "schema": "Comment",
+      "description": "Comments on a specific video."
+    },
+    "/videos/{videoId}/likes/{userId}": {
+      "schema": "Like",
+      "description": "Likes on a specific video by a specific user."
+    },
+    "/audit_logs/{logId}": {
+      "schema": "AuditLog",
+      "description": "Administrative audit logs."
+    },
+    "/platform_settings/{settingId}": {
+      "schema": {
+        "title": "PlatformSettings",
+        "description": "Global platform settings.",
+        "type": "object",
+        "properties": {
+          "maintenanceMode": { "type": "boolean" },
+          "maintenanceMessage": { "type": "string" },
+          "globalSoundEnabled": { "type": "boolean" },
+          "registrationEnabled": { "type": "boolean" },
+          "updatedAt": { "type": "string", "format": "date-time" },
+          "updatedBy": { "type": "string" }
+        }
+      },
+      "description": "Global platform settings."
+    }
+  }
+}

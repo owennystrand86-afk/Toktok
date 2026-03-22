@@ -1,0 +1,248 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Document ID: userId (uid)
+    // Fields:
+    //   - uid: string (required)
+    //   - displayName: string (optional)
+    //   - photoURL: string (optional)
+    //   - username: string (required)
+    //   - bio: string (optional)
+    //   - createdAt: timestamp (required)
+    //   - coins: number (optional, >= 0)
+    //   - followersCount: number (optional, >= 0)
+    //   - followingCount: number (optional, >= 0)
+    //   - isAdmin: boolean (optional)
+    //   - isVerified: boolean (optional)
+    //   - canGoLive: boolean (optional)
+    //   - isBanned: boolean (optional)
+    //   - warnings: number (optional, >= 0)
+    //   - lastDailyClaim: timestamp (optional)
+    //
+    // Collection: users/{userId}/followers
+    // Document ID: followerId
+    // Fields:
+    //   - uid: string (required)
+    //   - createdAt: timestamp (required)
+    //
+    // Collection: videos
+    // Document ID: videoId
+    // Fields:
+    //   - creatorId: string (required)
+    //   - creatorUsername: string (required)
+    //   - creatorPhotoURL: string (optional)
+    //   - videoUrl: string (required)
+    //   - description: string (optional)
+    //   - likesCount: number (required)
+    //   - commentsCount: number (required)
+    //   - sharesCount: number (required)
+    //   - createdAt: timestamp (required)
+    //
+    // Collection: live_streams
+    // Document ID: streamId
+    // Fields:
+    //   - hostId: string (required)
+    //   - hostUsername: string (required)
+    //   - hostPhotoURL: string (optional)
+    //   - status: string (required, 'live' or 'ended')
+    //   - viewerCount: number (required)
+    //   - title: string (required)
+    //   - createdAt: timestamp (required)
+    //
+    // Collection: messages
+    // Document ID: messageId
+    // Fields:
+    //   - senderId: string (required)
+    //   - receiverId: string (required)
+    //   - text: string (required)
+    //   - participants: array (required, contains senderId and receiverId)
+    //   - createdAt: timestamp (required)
+    //
+    // Collection: audit_logs
+    // Document ID: logId
+    // Fields:
+    //   - adminId: string (required)
+    //   - adminUsername: string (required)
+    //   - action: string (required)
+    //   - targetId: string (optional)
+    //   - targetUsername: string (optional)
+    //   - details: string (optional)
+    //   - createdAt: timestamp (required)
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        (
+          (request.auth.token.email != null && request.auth.token.email.matches("(?i)owennystrand86@gmail.com")) ||
+          (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+           get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true)
+        );
+    }
+
+    function isValidAuditLog(data) {
+      return data.adminId is string &&
+             data.adminUsername is string &&
+             data.action is string &&
+             data.createdAt is timestamp;
+    }
+
+    function isValidUser(data) {
+      return data.uid is string &&
+             data.username is string && data.username.size() > 0 && data.username.size() < 30 &&
+             (!('bio' in data) || (data.bio is string && data.bio.size() < 500)) &&
+             (!('coins' in data) || (data.coins is number)) &&
+             (!('followersCount' in data) || (data.followersCount is number)) &&
+             (!('followingCount' in data) || (data.followingCount is number)) &&
+             (!('isAdmin' in data) || (data.isAdmin is bool)) &&
+             (!('isVerified' in data) || (data.isVerified is bool)) &&
+             (!('canGoLive' in data) || (data.canGoLive is bool)) &&
+             (!('isBanned' in data) || (data.isBanned is bool)) &&
+             (!('warnings' in data) || (data.warnings is number)) &&
+             (!('externalLinks' in data) || (data.externalLinks is map));
+    }
+
+    function isValidReport(data) {
+      return data.reporterId is string &&
+             data.targetId is string &&
+             data.targetType in ['user', 'video', 'comment'] &&
+             data.reason is string &&
+             data.status in ['pending', 'resolved', 'dismissed'];
+    }
+
+    function isValidVideo(data) {
+      return data.creatorId is string &&
+             data.videoUrl is string &&
+             data.likesCount is number &&
+             data.commentsCount is number &&
+             data.sharesCount is number;
+    }
+
+    function isValidLiveStream(data) {
+      return data.hostId is string &&
+             data.hostUsername is string &&
+             data.status in ['live', 'ended'] &&
+             data.viewerCount is number &&
+             data.title is string;
+    }
+
+    function isValidMessage(data) {
+      return data.senderId is string &&
+             data.receiverId is string &&
+             data.text is string && data.text.size() > 0 && data.text.size() < 5000 &&
+             data.participants is list &&
+             data.participants.size() == 2 &&
+             request.auth.uid in data.participants;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      allow read: if true;
+      allow list: if true;
+      allow create: if isOwner(userId) && isValidUser(request.resource.data);
+      allow update: if isAdmin() || (isOwner(userId) && isValidUser(request.resource.data) && 
+                      (request.resource.data.isAdmin == resource.data.isAdmin || request.resource.data.isAdmin == true) &&
+                      (request.resource.data.isVerified == resource.data.isVerified) &&
+                      (request.resource.data.canGoLive == resource.data.canGoLive) &&
+                      (request.resource.data.coins == resource.data.coins)
+                     );
+
+      match /followers/{followerId} {
+        allow read: if true;
+        allow create: if isOwner(followerId);
+        allow delete: if isOwner(followerId);
+      }
+    }
+
+    match /reports/{reportId} {
+      allow read, list: if isAdmin();
+      allow create: if isAuthenticated() && isValidReport(request.resource.data);
+      allow update, delete: if isAdmin();
+    }
+
+    match /videos/{videoId} {
+      allow read: if true;
+      allow create: if (isAuthenticated() && isValidVideo(request.resource.data) && 
+                      request.resource.data.creatorId == request.auth.uid) || isAdmin();
+      allow update: if (isAuthenticated() && (
+        (isOwner(resource.data.creatorId) && isValidVideo(request.resource.data)) ||
+        // Others can update counts
+        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likesCount', 'commentsCount', 'sharesCount']))
+      )) || isAdmin();
+      allow delete: if isOwner(resource.data.creatorId) || isAdmin();
+
+      match /comments/{commentId} {
+        allow read: if true;
+        allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+        allow delete: if isAuthenticated() && (request.auth.uid == resource.data.userId || request.auth.uid == get(/databases/$(database)/documents/videos/$(videoId)).data.creatorId) || isAdmin();
+      }
+
+      match /likes/{userId} {
+        allow read: if true;
+        allow create: if isOwner(userId);
+        allow delete: if isOwner(userId);
+      }
+    }
+
+    match /live_streams/{streamId} {
+      allow read: if true;
+      allow create: if isAuthenticated() && isValidLiveStream(request.resource.data) && 
+                      (request.resource.data.hostId == request.auth.uid) &&
+                      (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.canGoLive == true || 
+                       get(/databases/$(database)/documents/users/$(request.auth.uid)).data.followersCount >= 1000 ||
+                       isAdmin());
+      allow update: if (isAuthenticated() && (
+        (isOwner(resource.data.hostId) && isValidLiveStream(request.resource.data)) ||
+        // Viewers can update viewerCount
+        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['viewerCount']))
+      )) || isAdmin();
+      allow delete: if isOwner(resource.data.hostId) || isAdmin();
+
+      match /messages/{messageId} {
+        allow read: if true;
+        allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      }
+    }
+
+    match /messages/{messageId} {
+      // Direct messages
+      allow read: if isAuthenticated() && request.auth.uid in resource.data.participants;
+      allow create: if isAuthenticated() && isValidMessage(request.resource.data);
+      allow delete: if isAuthenticated() && request.auth.uid in resource.data.participants;
+    }
+
+    match /audit_logs/{logId} {
+      allow read, list: if isAdmin();
+      allow create: if isAdmin() && isValidAuditLog(request.resource.data);
+      allow update, delete: if false;
+    }
+
+    match /platform_settings/{settingId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
+    match /test/connection {
+      allow read: if true;
+    }
+  }
+}

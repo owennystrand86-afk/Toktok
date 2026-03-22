@@ -1,0 +1,5 @@
+{
+  "name": "TokTok",
+  "description": "A TikTok-inspired video sharing platform with real-time interactions, user profiles, admin moderation tools, and a community-driven video feed.",
+  "requestFramePermissions": ["camera", "microphone", "geolocation", "display-capture", "autoplay"]
+}
